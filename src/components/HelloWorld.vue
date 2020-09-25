@@ -1,58 +1,112 @@
 <template>
-  <div class="hello">
-    <h1>{{ msg }}</h1>
-    <p>
-      For a guide and recipes on how to configure / customize this project,<br>
-      check out the
-      <a href="https://cli.vuejs.org" target="_blank" rel="noopener">vue-cli documentation</a>.
-    </p>
-    <h3>Installed CLI Plugins</h3>
-    <ul>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-babel" target="_blank" rel="noopener">babel</a></li>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-eslint" target="_blank" rel="noopener">eslint</a></li>
-    </ul>
-    <h3>Essential Links</h3>
-    <ul>
-      <li><a href="https://vuejs.org" target="_blank" rel="noopener">Core Docs</a></li>
-      <li><a href="https://forum.vuejs.org" target="_blank" rel="noopener">Forum</a></li>
-      <li><a href="https://chat.vuejs.org" target="_blank" rel="noopener">Community Chat</a></li>
-      <li><a href="https://twitter.com/vuejs" target="_blank" rel="noopener">Twitter</a></li>
-      <li><a href="https://news.vuejs.org" target="_blank" rel="noopener">News</a></li>
-    </ul>
-    <h3>Ecosystem</h3>
-    <ul>
-      <li><a href="https://router.vuejs.org" target="_blank" rel="noopener">vue-router</a></li>
-      <li><a href="https://vuex.vuejs.org" target="_blank" rel="noopener">vuex</a></li>
-      <li><a href="https://github.com/vuejs/vue-devtools#vue-devtools" target="_blank" rel="noopener">vue-devtools</a></li>
-      <li><a href="https://vue-loader.vuejs.org" target="_blank" rel="noopener">vue-loader</a></li>
-      <li><a href="https://github.com/vuejs/awesome-vue" target="_blank" rel="noopener">awesome-vue</a></li>
-    </ul>
-  </div>
+  <v-card
+    color="red lighten-2"
+    dark
+  >
+    <v-card-title class="headline red lighten-3">
+      Search for Public APIs
+    </v-card-title>
+    <v-card-text>
+      Explore hundreds of free API's ready for consumption! For more information visit
+      <a
+        class="grey--text text--lighten-3"
+        href="https://github.com/toddmotto/public-apis"
+        target="_blank"
+      >the Github repository</a>.
+    </v-card-text>
+    <v-card-text>
+      <v-text-field
+        v-model="search"
+        :loading="isLoading"
+        color="white"
+        label="Titre"
+        placeholder="Start typing to Search"
+      ></v-text-field>
+    </v-card-text>
+    <v-divider></v-divider>
+    
+    <v-card-actions>
+      <v-spacer></v-spacer>
+      <v-btn
+        :disabled="!model"
+        color="grey darken-3"
+        @click="model = null"
+      >
+        Clear
+        <v-icon right>mdi-close-circle</v-icon>
+      </v-btn>
+    </v-card-actions>
+
+    <v-card-text v-if="entries">
+      <div v-for="entry in this.entries" :key="entry.id">
+        <p>{{ entry.Title }}</p>
+        <img v-bind:src="entry.Poster" alt="poster">
+      </div>
+    </v-card-text>
+    
+    <v-card-text v-if="length > 0">
+      <v-pagination
+        v-model="page"
+        :page="page"
+        :length="length"
+        :total-visible="totalVisible"
+      ></v-pagination>
+    </v-card-text>
+    
+  </v-card>
 </template>
 
 <script>
-export default {
-  name: 'HelloWorld',
-  props: {
-    msg: String
-  }
-}
-</script>
+  export default {
+    data: () => ({
+      descriptionLimit: 60,
+      entries: [],
+      isLoading: false,
+      model: null,
+      search: null,
+      page: 1,
+      length: 0,
+      totalVisible: 10
+    }),
 
-<!-- Add "scoped" attribute to limit CSS to this component only -->
-<style scoped>
-h3 {
-  margin: 40px 0 0;
-}
-ul {
-  list-style-type: none;
-  padding: 0;
-}
-li {
-  display: inline-block;
-  margin: 0 10px;
-}
-a {
-  color: #42b983;
-}
-</style>
+    watch: {
+      search (val) {
+        if(val.length > 2){
+
+          if (this.isLoading) return
+
+          this.isLoading = true
+          
+          fetch('http://www.omdbapi.com/?apikey=8f0a5987&s=' + val + '&page=' + this.page)
+            .then(res => res.json())
+            .then(res => {
+              const { totalResults, Search } = res
+              this.length = Math.ceil(parseInt(totalResults) / 10)
+              this.entries = Search
+            })
+            .catch(err => {
+              console.log(err)
+            })
+            .finally(() => (this.isLoading = false))
+          }
+      },
+      page (val) {
+        if (this.isLoading) return
+
+        this.isLoading = true
+
+        fetch('http://www.omdbapi.com/?apikey=8f0a5987&s=' + this.search + '&page=' + val)
+          .then(res => res.json())
+          .then(res => {
+            const { totalResults, Search } = res
+            this.length = Math.ceil(parseInt(totalResults) / 10)
+            this.entries = Search
+          })
+          .catch(err => {
+            console.log(err)
+          })
+          .finally(() => (this.isLoading = false))
+        }
+    }
+  }
+</script>
